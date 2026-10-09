@@ -17,7 +17,8 @@ Everything refreshes by itself (alerts 1 min, storm 2 min, tides 6 min, surge/fo
 Tap 📺 in the header (or open `/tv.html` on the phone), tap **Go full screen**, then:
 - **iPhone/iPad:** Control Center → Screen Mirroring → the Vizio (AirPlay).
 - **Android:** quick settings → Cast (or Chrome ⋮ → Cast…) → the Vizio (Chromecast built in).
-- **Mac/PC:** Chrome ⋮ → Cast… → Sources: *Cast tab*.
+- **Mac/PC:** Chrome ⋮ → Cast… → Sources: *Cast tab* (Vizio/Chromecast only).
+- **Roku TV (e.g. Hisense):** Chrome casting doesn't work. Turn on Settings → Apple AirPlay and HomeKit on the TV and use Screen Mirroring from a Mac/iPhone, or Miracast from Android/Windows (TV: Settings → System → Screen mirroring).
 
 This is screen mirroring of the TV page: the phone must stay on and on the same Wi-Fi as the TV. A web page can't be cast without mirroring unless you pay a $5 Google Cast developer fee (custom receiver, doesn't work from iPhones) or run a separate always-on streaming server, so the site doesn't do either. The optional Cast sender button stays hidden unless `CAST_APP_ID` is set in `index.html`.
 
