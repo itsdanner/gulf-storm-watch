@@ -88,3 +88,15 @@ loadAlerts(); setInterval(loadAlerts, 60e3);
 refreshRadars(); setInterval(refreshRadars, 180e3);
 setInterval(() => document.querySelectorAll('.tile iframe').forEach(f => { f.src = f.src; }), 30 * 60e3);
 checkVersion(); setInterval(checkVersion, 5 * 60e3);
+
+// Google Cast receiver mode: when the TV itself loads this page as a Custom Web Receiver
+// (user agent contains "CrKey"), start the Cast receiver framework so the session stays open.
+if (/CrKey/.test(navigator.userAgent)) {
+  const sc = document.createElement('script');
+  sc.src = 'https://www.gstatic.com/cast/sdk/libs/caf_receiver/v3/cast_receiver_framework.js';
+  sc.onload = () => {
+    const ctx = cast.framework.CastReceiverContext.getInstance();
+    ctx.start({ disableIdleTimeout: true, maxInactivity: 86400 });
+  };
+  document.head.appendChild(sc);
+}

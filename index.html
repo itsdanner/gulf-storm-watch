@@ -112,6 +112,7 @@ body {
   display: flex; align-items: center; justify-content: center;
   cursor: pointer; font-size: 16px; transition: all .15s;
 }
+google-cast-launcher { width: 32px; height: 32px; cursor: pointer; --connected-color: #00d4ff; --disconnected-color: #8899aa; }
 .btn-icon:hover { background: var(--bg-card); color: var(--text); border-color: var(--accent); }
 
 /* ── Top bar (header + red ticker), always visible ── */
@@ -526,7 +527,8 @@ body {
     <span id="lastUpdate">—</span>
   </div>
   <div class="header-clock" id="clock"></div>
-  <button class="btn-icon tv-btn" onclick="openTv()" title="Send to TV">📺</button>
+  <google-cast-launcher id="castBtn" title="Cast to TV" style="display:none"></google-cast-launcher>
+  <button class="btn-icon tv-btn" onclick="openTv()" title="TV page / casting help">📺</button>
   <button class="btn-icon" onclick="toggleFullscreen()" title="Fullscreen">⛢</button>
 </header>
 
@@ -646,12 +648,11 @@ body {
   <div class="overlay-content" style="max-width:640px;padding:22px;max-height:90vh;overflow:auto">
     <button class="overlay-close" onclick="document.getElementById('tvHelp').classList.remove('active')">✕</button>
     <h2 style="font-size:18px;margin-bottom:10px">📺 Show on the TV</h2>
-    <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px">The TV page opened in a new window: 3×3 cameras, the alert banner and three live radar loops. Now send that window to the TV:</p>
-    <p style="font-size:13px;line-height:1.6"><b>Vizio (Chromecast built in) from Chrome:</b> in the TV window press the Chrome menu <b>⋮ → Cast, save and share → Cast…</b>, pick your Vizio, set Sources to <b>Cast tab</b>. (Use “Cast screen” instead if the cameras look frozen.)</p>
-    <p style="font-size:13px;line-height:1.6;margin-top:8px"><b>Vizio (AirPlay) from a Mac:</b> Control Center → <b>Screen Mirroring</b> → your Vizio. Put the TV window in full screen first.</p>
-    <p style="font-size:13px;line-height:1.6;margin-top:8px"><b>From an iPhone/iPad:</b> open the TV page in Safari, then Control Center → <b>Screen Mirroring</b> → your Vizio.</p>
-    <p style="font-size:13px;line-height:1.6;margin-top:8px"><b>No casting at all:</b> open the TV page in the Vizio's built-in web browser, or plug a laptop in with HDMI.</p>
-    <p style="font-size:12px;color:var(--text-dim);margin-top:12px">The computer and TV must be on the same Wi-Fi for casting. The TV page itself updates on its own. Keep the casting computer awake.</p>
+    <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px">A TV page just opened in a new window (3×3 cameras, banner, three radar loops).</p>
+    <p style="font-size:13px;line-height:1.6"><b>True cast, no mirroring (Vizio / Chromecast built in):</b> use the <b>cast icon</b> next to this button (Chrome or Edge on a computer, or Chrome on Android) and pick the Vizio. The TV loads the dashboard itself, so your computer can sleep or close. The icon only appears once the one-time Cast setup in the README is done.</p>
+    <p style="font-size:13px;line-height:1.6;margin-top:8px"><b>Fallback, mirroring:</b> Chrome ⋮ → Cast, save and share → Cast…, then Sources → Cast tab. Or Mac/iPhone Control Center → Screen Mirroring → Vizio (AirPlay).</p>
+    <p style="font-size:13px;line-height:1.6;margin-top:8px"><b>Simplest:</b> open <b>tv.html</b> in the Vizio's built-in web browser.</p>
+    <p style="font-size:12px;color:var(--text-dim);margin-top:12px">AirPlay can only send video or audio, not a live web page, so it can only mirror. Casting needs the TV and computer on the same Wi-Fi to connect; after that the TV pulls the page from the internet.</p>
   </div>
 </div>
 
@@ -663,6 +664,19 @@ body {
   </div>
 </div>
 
+<script>
+// Google Cast sender. Set CAST_APP_ID (from the Google Cast Developer Console, see README) to enable the cast button.
+const CAST_APP_ID = '';
+window.__onGCastApiAvailable = function (ok) {
+  if (!ok || !CAST_APP_ID) return;
+  cast.framework.CastContext.getInstance().setOptions({
+    receiverApplicationId: CAST_APP_ID,
+    autoJoinPolicy: chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED,
+  });
+  document.getElementById('castBtn').style.display = 'inline-block';
+};
+</script>
+<script src="https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1" async></script>
 <script src="cameras.js"></script>
 <script>
 // Camera list lives in cameras.js

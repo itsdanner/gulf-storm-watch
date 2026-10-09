@@ -14,7 +14,16 @@ Live dashboard for Hurricane Isaias (NHC AL092026) along the Florida Panhandle c
 Everything refreshes by itself (alerts 1 min, storm 2 min, tides 6 min, surge/forecast 10 min, images 5 min) and the page reloads when a new version is deployed.
 
 ### Putting it on a TV
-Click 📺 in the header (or open `/tv.html`), then either Chrome ⋮ → Cast → pick the Vizio → Sources: *Cast tab*, or on a Mac/iPhone use Screen Mirroring → the Vizio. Computer and TV must be on the same Wi-Fi. Or just open `tv.html` in the TV's own web browser.
+**Quickest:** open `tv.html` in the Vizio's built-in web browser, or mirror it (Chrome ⋮ → Cast → Sources: *Cast tab*, or Screen Mirroring from a Mac/iPhone).
+
+**True cast, no mirroring (Vizio SmartCast has Chromecast built in):** `tv.html` doubles as a Google Cast *Custom Web Receiver*, so the TV loads the page itself and the sender only acts as a remote. One-time setup:
+1. Register at <https://cast.google.com/publish> (one-time $5 fee).
+2. Add new application -> **Custom Receiver**, URL: `https://itsdanner.github.io/gulf-storm-watch/tv.html`. Copy the **App ID**.
+3. Under *Devices*, add the Vizio's serial number (TV Settings -> System -> System Information) as a test device, then restart the TV (takes ~15 min to activate). Or publish the app to skip this.
+4. Put the App ID in `CAST_APP_ID` near the top of `index.html`, commit and push.
+5. In Chrome/Edge on a computer or Chrome on Android, open the dashboard and click the cast icon next to 📺.
+
+AirPlay can only send video/audio, not a live web page, so with AirPlay the only option is screen mirroring. iPhone/iPad Safari can't cast web pages.
 
 Static site, no build: open `index.html` or run `python3 -m http.server 8000`.
 
