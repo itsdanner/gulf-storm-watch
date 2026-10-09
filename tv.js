@@ -100,3 +100,19 @@ if (/CrKey/.test(navigator.userAgent)) {
   };
   document.head.appendChild(sc);
 }
+
+// Phones/tablets: one tap = fullscreen + landscape + keep awake, then the system cast / screen-mirroring menu shows this page.
+(function () {
+  if (/CrKey/.test(navigator.userAgent) || !matchMedia('(pointer: coarse)').matches) return;
+  const el = $('start'), ios = /iPhone|iPad|iPod/.test(navigator.userAgent);
+  $('startHelp').textContent = ios
+    ? 'Then open Control Center, tap Screen Mirroring and choose the TV. Rotate the phone sideways.'
+    : 'Then pull down the quick settings, tap Cast (or Chrome menu ⋮ → Cast…) and choose the TV. Rotate the phone sideways.';
+  el.classList.add('show');
+  el.addEventListener('click', async () => {
+    try { await document.documentElement.requestFullscreen(); } catch {}
+    try { await screen.orientation.lock('landscape'); } catch {}
+    keepAwake();
+    el.classList.remove('show');
+  });
+})();

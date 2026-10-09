@@ -13,17 +13,13 @@ Live dashboard for Hurricane Isaias (NHC AL092026) along the Florida Panhandle c
 
 Everything refreshes by itself (alerts 1 min, storm 2 min, tides 6 min, surge/forecast 10 min, images 5 min) and the page reloads when a new version is deployed.
 
-### Putting it on a TV
-**Quickest:** open `tv.html` in the Vizio's built-in web browser, or mirror it (Chrome ⋮ → Cast → Sources: *Cast tab*, or Screen Mirroring from a Mac/iPhone).
+### Putting it on a TV (free, any phone)
+Tap 📺 in the header (or open `/tv.html` on the phone), tap **Go full screen**, then:
+- **iPhone/iPad:** Control Center → Screen Mirroring → the Vizio (AirPlay).
+- **Android:** quick settings → Cast (or Chrome ⋮ → Cast…) → the Vizio (Chromecast built in).
+- **Mac/PC:** Chrome ⋮ → Cast… → Sources: *Cast tab*.
 
-**True cast, no mirroring (Vizio SmartCast has Chromecast built in):** `tv.html` doubles as a Google Cast *Custom Web Receiver*, so the TV loads the page itself and the sender only acts as a remote. One-time setup:
-1. Register at <https://cast.google.com/publish> (one-time $5 fee).
-2. Add new application -> **Custom Receiver**, URL: `https://itsdanner.github.io/gulf-storm-watch/tv.html`. Copy the **App ID**.
-3. Under *Devices*, add the Vizio's serial number (TV Settings -> System -> System Information) as a test device, then restart the TV (takes ~15 min to activate). Or publish the app to skip this.
-4. Put the App ID in `CAST_APP_ID` near the top of `index.html`, commit and push.
-5. In Chrome/Edge on a computer or Chrome on Android, open the dashboard and click the cast icon next to 📺.
-
-AirPlay can only send video/audio, not a live web page, so with AirPlay the only option is screen mirroring. iPhone/iPad Safari can't cast web pages.
+This is screen mirroring of the TV page: the phone must stay on and on the same Wi-Fi as the TV. A web page can't be cast without mirroring unless you pay a $5 Google Cast developer fee (custom receiver, doesn't work from iPhones) or run a separate always-on streaming server, so the site doesn't do either. The optional Cast sender button stays hidden unless `CAST_APP_ID` is set in `index.html`.
 
 Static site, no build: open `index.html` or run `python3 -m http.server 8000`.
 
