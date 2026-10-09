@@ -416,7 +416,7 @@ function startLive() {
   document.addEventListener('visibilitychange', () => { if (!document.hidden) wake(); });
   window.addEventListener('online', wake);
   // camera iframes can stall silently: reload them periodically
-  setInterval(() => document.querySelectorAll('.cam-tile iframe').forEach(f => { f.src = f.src; }), 30 * 60e3);
+  setInterval(() => CamManager.reloadAngelcam(), 30 * 60e3);
   // pick up new deployments of this page without a manual refresh
   let version = null;
   setInterval(async () => {
