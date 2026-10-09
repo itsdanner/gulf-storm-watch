@@ -205,9 +205,9 @@ function renderThreat(points, track, toa) {
 function initMap() {
   if (state.map || !window.L) return;
   const map = L.map('map', { zoomControl: true, attributionControl: true }).setView([SITE.lat, SITE.lon], 7);
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-    subdomains: 'abcd', maxZoom: 12, attribution: '© OpenStreetMap © CARTO',
-  }).addTo(map);
+  const esri = 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas';
+  L.tileLayer(`${esri}/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}`, { maxZoom: 12, attribution: 'Tiles © Esri' }).addTo(map);
+  L.tileLayer(`${esri}/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}`, { maxZoom: 12 }).addTo(map);
   L.circleMarker([SITE.lat, SITE.lon], { radius: 7, color: '#fff', weight: 2, fillColor: '#00d4ff', fillOpacity: 1 })
     .addTo(map).bindTooltip('Monitoring site', { permanent: false });
   [25, 50, 100].forEach(nm => L.circle([SITE.lat, SITE.lon], { radius: nm * 1852, color: '#00d4ff', weight: 1, opacity: .35, fill: false, dashArray: '4 6' })
@@ -305,7 +305,7 @@ async function loadForecast() {
     const xs = per.map(p => new Date(p.startTime).getTime());
     const wind = per.map(p => num(p.windSpeed)), gust = per.map(p => num(p.windGust)), pop = per.map(p => p.probabilityOfPrecipitation?.value ?? 0);
     const peakW = Math.max(...wind), peakG = Math.max(0, ...gust.filter(Boolean));
-    $('forecastSummary').textContent = `Next 36 h: peak sustained ${peakW} mph, peak gust ${peakG || '—'} mph, max rain chance ${Math.max(...pop)}%. ${per[0].shortForecast}.`;
+    $('forecastSummary').textContent = `Next 36 h: peak sustained ${peakW} mph, ${peakG ? 'peak gust ' + peakG + ' mph' : 'gusts not in the NWS hourly data'}, max rain chance ${Math.max(...pop)}%. ${per[0].shortForecast}.`;
     drawChart('forecastChart', {
       type: 'line',
       data: {
@@ -385,9 +385,9 @@ function drawChart(id, cfg) {
 
 // ─── NHC / NOAA image cards (robust to a failed load; keeps retrying) ───
 const IMAGES = {
-  stormTrackImg: () => `https://www.nhc.noaa.gov/storm_graphics/${GRAPHICS_DIR}/${STORM_ID.toUpperCase()}_5day_cone_sm.png`,
+  stormTrackImg: () => `https://www.nhc.noaa.gov/storm_graphics/${GRAPHICS_DIR}/${STORM_ID.toUpperCase()}_5day_cone.png`,
   windProbImg: () => `https://www.nhc.noaa.gov/storm_graphics/${GRAPHICS_DIR}/${STORM_ID.toUpperCase()}_wind_probs_34_F120.png`,
-  surgeImg: () => `https://www.nhc.noaa.gov/storm_graphics/${GRAPHICS_DIR}/refresh/${STORM_ID.toUpperCase()}_peak_surge_sm+png/`,
+  surgeImg: () => `https://www.nhc.noaa.gov/storm_graphics/${GRAPHICS_DIR}/${STORM_ID.toUpperCase()}_peak_surge.png`,
   satelliteImg: () => 'https://cdn.star.nesdis.noaa.gov/GOES19/ABI/CONUS/GEOCOLOR/1250x750.jpg',
 };
 function refreshImages() {
