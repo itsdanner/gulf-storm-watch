@@ -526,6 +526,7 @@ body {
     <span id="lastUpdate">—</span>
   </div>
   <div class="header-clock" id="clock"></div>
+  <button class="btn-icon tv-btn" onclick="openTv()" title="Send to TV">📺</button>
   <button class="btn-icon" onclick="toggleFullscreen()" title="Fullscreen">⛢</button>
 </header>
 
@@ -640,6 +641,20 @@ body {
   </aside>
 </div>
 
+<!-- ═══════ TV HELP ═══════ -->
+<div class="overlay" id="tvHelp" onclick="if(event.target.id==='tvHelp')this.classList.remove('active')">
+  <div class="overlay-content" style="max-width:640px;padding:22px;max-height:90vh;overflow:auto">
+    <button class="overlay-close" onclick="document.getElementById('tvHelp').classList.remove('active')">✕</button>
+    <h2 style="font-size:18px;margin-bottom:10px">📺 Show on the TV</h2>
+    <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px">The TV page opened in a new window: 3×3 cameras, the alert banner and three live radar loops. Now send that window to the TV:</p>
+    <p style="font-size:13px;line-height:1.6"><b>Vizio (Chromecast built in) from Chrome:</b> in the TV window press the Chrome menu <b>⋮ → Cast, save and share → Cast…</b>, pick your Vizio, set Sources to <b>Cast tab</b>. (Use “Cast screen” instead if the cameras look frozen.)</p>
+    <p style="font-size:13px;line-height:1.6;margin-top:8px"><b>Vizio (AirPlay) from a Mac:</b> Control Center → <b>Screen Mirroring</b> → your Vizio. Put the TV window in full screen first.</p>
+    <p style="font-size:13px;line-height:1.6;margin-top:8px"><b>From an iPhone/iPad:</b> open the TV page in Safari, then Control Center → <b>Screen Mirroring</b> → your Vizio.</p>
+    <p style="font-size:13px;line-height:1.6;margin-top:8px"><b>No casting at all:</b> open the TV page in the Vizio's built-in web browser, or plug a laptop in with HDMI.</p>
+    <p style="font-size:12px;color:var(--text-dim);margin-top:12px">The computer and TV must be on the same Wi-Fi for casting. The TV page itself updates on its own. Keep the casting computer awake.</p>
+  </div>
+</div>
+
 <!-- ═══════ OVERLAY / EXPANDED VIEW ═══════ -->
 <div class="overlay" id="overlay" onclick="closeOverlay(event)">
   <div class="overlay-content" id="overlayContent">
@@ -648,27 +663,9 @@ body {
   </div>
 </div>
 
+<script src="cameras.js"></script>
 <script>
-// ─── Camera Configuration ───
-const CAMERAS = [
-  { id: 'beach-club',      name: 'Beach Club',            sub: 'Sandestin Resort · Gulf Beach',   type: 'angelcam', code: '8dr53koeyx' },
-  { id: 'miramar-pano',    name: 'Miramar Beach',         sub: 'Oceanfront Panorama',              type: 'youtube',  code: 'K1PkxWM6QB4' },
-  { id: 'marina',          name: 'Baytowne Marina',       sub: 'Sandestin Resort',                 type: 'angelcam', code: '9kyznnm2y4' },
-  { id: 'marina-bar',      name: 'Marina Bar & Grill',    sub: 'Sandestin Resort',                 type: 'angelcam', code: '91yxbb1xro' },
-  { id: 'leeward',         name: 'Leeward Key',           sub: 'Miramar Beach Shores',             type: 'youtube',  code: 'CVgBM39TOh8' },
-  { id: 'village',         name: 'Baytowne Wharf',        sub: 'Sandestin Village',                type: 'angelcam', code: '91rx29pxlo' },
-  { id: 'whales-tail',     name: 'Whales Tail Beach',     sub: 'Seascape, FL (~2 mi W)',           type: 'youtube',  code: 'TyX02EtQcYI' },
-  { id: 'pelican',         name: 'Pelican Beach Resort',  sub: 'Destin (~3 mi W)',                 type: 'youtube',  code: 'FOHZhqCwRTo' },
-  { id: 'henderson',       name: 'Henderson Park Inn',    sub: 'Destin Beach (~4 mi W)',           type: 'youtube',  code: 'RMBfYql2dxk' },
-];
-
-const EXTRA_CAMERAS = [
-  { id: 'tennis',          name: 'Tennis Center',         sub: 'Sandestin Resort',                 type: 'angelcam', code: 'j3r771e5rm' },
-  { id: 'maravilla',       name: 'Maravilla Overlook',    sub: 'Miramar Beach (stream offline)',   type: 'youtube',  code: 'j2AYwnv0M7k' },
-  { id: 'maryann',         name: 'Marina Bar — MaryAnn',  sub: 'Sandestin Mascot Cam',             type: 'angelcam', code: 'm1ervd6gr7' },
-  { id: 'destin-marina',   name: 'Destin Harbor Marina',  sub: 'Destin (~4 mi W)',                 type: 'youtube',  code: '_9VkcK5vHgY' },
-  { id: 'santa-rosa',      name: 'Santa Rosa Beach',      sub: '~5 mi E',                          type: 'youtube',  code: 'Tcw_v8NiQz8' },
-];
+// Camera list lives in cameras.js
 
 // ─── Build Camera Tiles ───
 function buildCameraGrid() {
@@ -701,12 +698,6 @@ function createCamTile(cam) {
   `;
   tile.addEventListener('click', () => expandCamera(cam.id, `${cam.name} — ${cam.sub}`));
   return tile;
-}
-
-function getCamSrc(cam) {
-  return cam.type === 'angelcam'
-    ? `https://v.angelcam.com/iframe?v=${cam.code}&autoplay=1`
-    : `https://www.youtube-nocookie.com/embed/${cam.code}?autoplay=1&mute=1&playsinline=1&rel=0`;
 }
 
 // ─── Expand / Overlay ───
@@ -856,6 +847,12 @@ function updateClock() {
     weekday: 'short', hour: 'numeric', minute: '2-digit', second: '2-digit',
     hour12: true
   }) + ' CDT';
+}
+
+// ─── TV mode ───
+function openTv() {
+  window.open('tv.html', 'alexiaalert-tv', 'popup=yes,width=1280,height=720');
+  document.getElementById('tvHelp').classList.add('active');
 }
 
 // ─── Fullscreen ───

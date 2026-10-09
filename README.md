@@ -8,9 +8,13 @@ Live dashboard for Hurricane Isaias (NHC AL092026) along the Florida Panhandle c
 - Storm-surge sample at the site from the NHC surge raster, plus the NHC peak-surge map
 - NWS hourly wind / gust / rain chart and NOAA tide-gauge water levels (Pensacola, Panama City)
 - NHC cone, wind probabilities, GOES satellite, Windy radar
+- 📺 TV mode (`tv.html`, opened by the 📺 button): 3×3 cameras, the banner and three live NWS radar loops, built for casting to a Vizio via Chromecast or AirPlay
 - Desktop "monitor wall" layout and a mobile-friendly stacked layout
 
 Everything refreshes by itself (alerts 1 min, storm 2 min, tides 6 min, surge/forecast 10 min, images 5 min) and the page reloads when a new version is deployed.
+
+### Putting it on a TV
+Click 📺 in the header (or open `/tv.html`), then either Chrome ⋮ → Cast → pick the Vizio → Sources: *Cast tab*, or on a Mac/iPhone use Screen Mirroring → the Vizio. Computer and TV must be on the same Wi-Fi. Or just open `tv.html` in the TV's own web browser.
 
 Static site, no build: open `index.html` or run `python3 -m http.server 8000`.
 
