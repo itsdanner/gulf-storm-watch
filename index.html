@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#0a0e14">
-<title>Gulf Storm Watch — Hurricane Isaias</title>
+<title>AlexiaAlert — Hurricane Isaias</title>
 <style>
 :root {
   --bg: #0a0e14;
@@ -26,6 +26,8 @@
   --radius: 6px;
   --gap: 3px;
   --header-h: 52px;
+  --ticker-h: 30px;
+  --top-h: calc(var(--header-h) + var(--ticker-h));
 }
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { height: 100%; overflow: hidden; }
@@ -88,6 +90,7 @@ body {
   color: var(--text-secondary);
   font-variant-numeric: tabular-nums;
 }
+.stamp { margin-left: auto; font-weight: 400; color: var(--text-dim); text-transform: none; letter-spacing: 0; font-size: 10px; }
 .header-refresh {
   font-size: 11px; color: var(--text-dim);
   display: flex; align-items: center; gap: 4px;
@@ -111,23 +114,26 @@ body {
 }
 .btn-icon:hover { background: var(--bg-card); color: var(--text); border-color: var(--accent); }
 
-/* ── Alert Ticker ── */
+/* ── Top bar (header + red ticker), always visible ── */
+.top-bar { position: sticky; top: 0; z-index: 500; }
 .alert-ticker {
-  background: var(--red-dim);
+  height: var(--ticker-h);
+  line-height: var(--ticker-h);
+  background: #2a0d12;
   border-bottom: 1px solid var(--red);
-  padding: 6px 16px;
-  font-size: 12px; font-weight: 600;
-  color: var(--red);
+  border-top: 1px solid var(--red);
+  font-size: 12px; font-weight: 700; letter-spacing: .4px;
+  color: #ff6b6b;
   overflow: hidden; white-space: nowrap;
-  display: none;
 }
-.alert-ticker.active { display: block; }
+.alert-ticker:hover .alert-ticker-text { animation-play-state: paused; }
 .alert-ticker-text {
   display: inline-block;
-  animation: scroll-left 30s linear infinite;
+  padding-left: 100%;
+  animation: scroll-left 40s linear infinite;
 }
 @keyframes scroll-left {
-  0% { transform: translateX(100vw); }
+  0% { transform: translateX(0); }
   100% { transform: translateX(-100%); }
 }
 
@@ -135,8 +141,8 @@ body {
 .dashboard {
   display: grid;
   grid-template-columns: 1fr 400px;
-  height: calc(100vh - var(--header-h));
-  height: calc(100dvh - var(--header-h));
+  height: calc(100vh - var(--top-h));
+  height: calc(100dvh - var(--top-h));
   overflow: hidden;
 }
 
@@ -402,6 +408,7 @@ body {
 }
 
 @media (max-width: 1023px) {
+  html, body { overflow: auto; }
   .dashboard {
     grid-template-columns: 1fr;
     height: auto;
@@ -457,6 +464,7 @@ body {
   .storm-data { grid-template-columns: 1fr 1fr; gap: 6px; }
   .storm-stat-value { font-size: 16px; }
   .radar-frame { height: 280px; }
+  #map { height: 300px; }
 
   .overlay-content iframe { min-height: 50vh; }
 }
@@ -474,6 +482,18 @@ body {
   }
 }
 
+/* ── Live panels ── */
+#map { height: 320px; background: var(--bg); }
+.chart-box { position: relative; height: 200px; padding: 6px 8px; }
+.threat-row { padding: 7px 12px; border-bottom: 1px solid var(--border); font-size: 12px; line-height: 1.4; }
+.threat-row:last-child { border-bottom: none; }
+.threat-k { font-size: 10px; text-transform: uppercase; letter-spacing: .5px; color: var(--text-dim); }
+.threat-v { color: var(--text); }
+.surge-note, .surge-hist, .fc-summary, .tide-row { padding: 6px 12px; font-size: 11px; color: var(--text-secondary); line-height: 1.5; }
+.surge-hist { color: var(--text-dim); }
+.map-legend { padding: 5px 12px; font-size: 10px; color: var(--text-secondary); display: flex; flex-wrap: wrap; gap: 4px 12px; }
+.leaflet-container { font-family: inherit; }
+
 /* ── Utility ── */
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
 .img-error-placeholder {
@@ -482,20 +502,23 @@ body {
   min-height: 120px; background: var(--bg);
 }
 </style>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 </head>
 <body>
 
 <!-- ═══════ HEADER ═══════ -->
+<div class="top-bar">
 <header class="header">
   <div class="header-logo">
     <span class="hurricane-icon">🌀</span>
-    <span class="app-name">Gulf Storm Watch</span>
-    <span class="storm-name">— Hurricane Isaias</span>
+    <span class="app-name">AlexiaAlert</span>
+    <span class="storm-name">· Hurricane Isaias</span>
   </div>
   <div class="live-badge"><span class="live-dot"></span> LIVE</div>
   <div class="storm-badge">
-    <span>⚠ CAT 3</span>
-    <span class="badge-text">· 120 MPH</span>
+    <span id="headerCat">LOADING…</span>
   </div>
   <div class="header-spacer"></div>
   <div class="header-refresh" id="refreshIndicator">
@@ -506,9 +529,10 @@ body {
   <button class="btn-icon" onclick="toggleFullscreen()" title="Fullscreen">⛢</button>
 </header>
 
-<!-- ═══════ ALERT TICKER ═══════ -->
+<!-- ═══════ ALERT TICKER (always on) ═══════ -->
 <div class="alert-ticker" id="alertTicker">
-  <span class="alert-ticker-text" id="alertTickerText"></span>
+  <span class="alert-ticker-text" id="alertTickerText">LOADING LATEST STORM INFORMATION…</span>
+</div>
 </div>
 
 <!-- ═══════ MAIN DASHBOARD ═══════ -->
@@ -520,141 +544,96 @@ body {
   <!-- ── Intel Panel ── -->
   <aside class="intel-panel">
 
-    <!-- Alerts -->
     <div class="intel-card" id="alertsCard">
-      <div class="intel-card-header" onclick="toggleCard('alertsBody')">
-        <span class="icon">⚠️</span> Active Alerts & Warnings
-      </div>
+      <div class="intel-card-header" onclick="toggleCard('alertsBody')">⚠ Active Alerts &amp; Warnings<span class="stamp" id="stamp-alerts"></span></div>
       <div class="intel-card-body alerts-feed" id="alertsBody">
         <div class="alerts-loading" id="alertsLoading">Loading NWS alerts…</div>
       </div>
     </div>
 
-    <!-- Storm Data -->
     <div class="intel-card">
-      <div class="intel-card-header" onclick="toggleCard('stormDataBody')">
-        <span class="icon">"Š</span> Storm Data — Advisory 11
-      </div>
-      <div class="intel-card-body storm-data" id="stormDataBody">
-        <div class="storm-stat">
-          <div class="storm-stat-label">Category</div>
-          <div class="storm-stat-value cat3">3 <span class="storm-stat-unit">MAJOR</span></div>
-        </div>
-        <div class="storm-stat">
-          <div class="storm-stat-label">Max Wind</div>
-          <div class="storm-stat-value wind">120 <span class="storm-stat-unit">mph (105 kt)</span></div>
-        </div>
-        <div class="storm-stat">
-          <div class="storm-stat-label">Movement</div>
-          <div class="storm-stat-value">NNE <span class="storm-stat-unit">13 kt</span></div>
-        </div>
-        <div class="storm-stat">
-          <div class="storm-stat-label">TS-Wind Odds (Destin)</div>
-          <div class="storm-stat-value">94 <span class="storm-stat-unit">% (50 kt: 36%)</span></div>
-        </div>
-        <div class="storm-stat">
-          <div class="storm-stat-label">Dist. to Site</div>
-          <div class="storm-stat-value">~42 <span class="storm-stat-unit">nmi from track</span></div>
-        </div>
-        <div class="storm-stat">
-          <div class="storm-stat-label">Landfall ETA</div>
-          <div class="storm-stat-value" style="font-size:14px">10–11 PM <span class="storm-stat-unit">CDT Tonight</span></div>
-        </div>
-        <div class="storm-stat full-width">
-          <div class="storm-stat-label">Surge Forecast at Site</div>
-          <div class="storm-stat-value" style="color:var(--amber)">5–9 <span class="storm-stat-unit">ft above normal tide levels</span></div>
-        </div>
-        <div class="storm-stat full-width">
-          <div class="storm-stat-label">Est. Wind at Site</div>
-          <div class="storm-stat-value">43–53 <span class="storm-stat-unit">mph sustained (gusts to 65 mph)</span></div>
-        </div>
-      </div>
+      <div class="intel-card-header">🌀 Storm Status (live from NHC)<span class="stamp" id="stamp-storm"></span></div>
+      <div class="intel-card-body storm-data" id="stormCard"><div class="alerts-loading">Loading…</div></div>
     </div>
 
-    <!-- Location -->
     <div class="intel-card">
-      <div class="intel-card-header">
-        <span class="icon">"</span> Monitoring Location
-      </div>
-      <div class="intel-card-body location-info">
-        <div class="addr">🏠 Miramar Beach / Sandestin, FL</div>
-        <div class="dist">Sandestin / South Walton County · ~42 nmi east of forecast track<br>
-        Walton County is under <strong style="color:var(--red)">Hurricane Warning</strong> &
-        <strong style="color:var(--amber)">Storm Surge Warning</strong></div>
-      </div>
+      <div class="intel-card-header">🎯 Threat to the Site<span class="stamp" id="stamp-threat"></span></div>
+      <div class="intel-card-body" id="threatBody"><div class="alerts-loading">Loading…</div></div>
     </div>
 
-    <!-- NHC Storm Track -->
     <div class="intel-card">
-      <div class="intel-card-header" onclick="expandImage('stormTrackImg', 'NHC 5-Day Storm Track')">
-        <span class="icon">▣</span> NHC Storm Track · Click to Expand
-      </div>
+      <div class="intel-card-header">🗺 Live Map · Track, Cone, Wind Field<span class="stamp" id="stamp-map"></span></div>
+      <div class="intel-card-body"><div id="map"></div>
+        <div class="map-legend"><span>▬ cyan: forecast track</span><span>▭ white: cone</span><span style="color:#ffd60a">● 34 kt</span><span style="color:#ff9f0a">● 50 kt</span><span style="color:#ff3b30">● 64 kt</span><span style="color:#ff2d55">▬ hurricane warning</span><span style="color:#2f80ff">▬ TS warning</span><span>◌ 25/50/100 nmi rings</span></div></div>
+    </div>
+
+    <div class="intel-card">
+      <div class="intel-card-header">🌊 Storm Surge at the Site<span class="stamp" id="stamp-surge"></span></div>
+      <div class="intel-card-body" id="surgeBody"><div class="alerts-loading">Sampling NHC surge raster…</div></div>
+    </div>
+
+    <div class="intel-card">
+      <div class="intel-card-header" onclick="expandImage('surgeImg', 'NHC Peak Storm Surge')">🌊 NHC Peak Surge Map · Click to Expand<span class="stamp" id="stamp-surgeImg"></span></div>
       <div class="intel-card-body">
-        <img id="stormTrackImg" class="storm-track-img"
-             src="https://www.nhc.noaa.gov/storm_graphics/AT09/AL092026_5day_cone_with_line_and_wind.png"
-             alt="NHC 5-day cone for Hurricane Isaias"
-             onerror="this.onerror=null;this.parentElement.innerHTML='<div class=img-error-placeholder>NHC graphic unavailable — <a href=https://www.nhc.noaa.gov/refresh/graphics_at9+shtml/ target=_blank style=color:var(--accent)>View on NHC ↗</a></div>'"
-             loading="eager">
+        <img id="surgeImg" alt="NHC Peak Storm Surge" style="width:100%;height:auto;" loading="lazy">
+        <div class="img-error-placeholder" style="display:none">Loading… <a href="https://www.nhc.noaa.gov/graphics_at4.shtml" target="_blank" style="color:var(--accent);margin-left:6px">NHC ↗</a></div>
       </div>
     </div>
 
-    <!-- Radar (Windy embed) -->
     <div class="intel-card">
-      <div class="intel-card-header" onclick="expandIframe('radarFrame', 'Live Radar — Miramar Beach')">
-        <span class="icon">"'</span> Live Radar · Click to Expand
+      <div class="intel-card-header">💨 Hourly Wind, Gusts &amp; Rain (NWS)<span class="stamp" id="stamp-forecast"></span></div>
+      <div class="intel-card-body"><div class="fc-summary" id="forecastSummary">Loading…</div><div class="chart-box"><canvas id="forecastChart"></canvas></div></div>
+    </div>
+
+    <div class="intel-card">
+      <div class="intel-card-header">📈 Water Levels · NOAA Gauges<span class="stamp" id="stamp-tides"></span></div>
+      <div class="intel-card-body"><div id="tideSummary"></div><div class="chart-box"><canvas id="tideChart"></canvas></div><div class="surge-note">Pensacola and Panama City are the nearest NOAA gauges (roughly 50 mi away each way). “vs predicted tide” is the storm-driven rise on top of the normal tide.</div></div>
+    </div>
+
+    <div class="intel-card">
+      <div class="intel-card-header" onclick="expandImage('stormTrackImg', 'NHC 5-Day Cone')">🌀 NHC Cone · Click to Expand<span class="stamp" id="stamp-stormTrackImg"></span></div>
+      <div class="intel-card-body">
+        <img id="stormTrackImg" alt="NHC 5-Day Cone" style="width:100%;height:auto;" loading="lazy">
+        <div class="img-error-placeholder" style="display:none">Loading… <a href="https://www.nhc.noaa.gov/graphics_at4.shtml" target="_blank" style="color:var(--accent);margin-left:6px">NHC ↗</a></div>
       </div>
+    </div>
+
+    <div class="intel-card">
+      <div class="intel-card-header" onclick="expandImage('windProbImg', 'Chance of 39+ mph Winds')">💨 34-kt Wind Probabilities · Click to Expand<span class="stamp" id="stamp-windProbImg"></span></div>
+      <div class="intel-card-body">
+        <img id="windProbImg" alt="Chance of 39+ mph Winds" style="width:100%;height:auto;" loading="lazy">
+        <div class="img-error-placeholder" style="display:none">Loading… <a href="https://www.nhc.noaa.gov/graphics_at4.shtml" target="_blank" style="color:var(--accent);margin-left:6px">NHC ↗</a></div>
+      </div>
+    </div>
+
+    <div class="intel-card">
+      <div class="intel-card-header" onclick="expandImage('satelliteImg', 'GOES-East Satellite')">🛰 GOES-East Satellite · Click to Expand<span class="stamp" id="stamp-satelliteImg"></span></div>
+      <div class="intel-card-body">
+        <img id="satelliteImg" alt="GOES-East Satellite" style="width:100%;height:auto;object-fit:cover;" loading="lazy">
+        <div class="img-error-placeholder" style="display:none">Loading… <a href="https://www.star.nesdis.noaa.gov/GOES/conus.php?sat=G19" target="_blank" style="color:var(--accent);margin-left:6px">NESDIS ↗</a></div>
+      </div>
+    </div>
+
+    <div class="intel-card">
+      <div class="intel-card-header" onclick="expandIframe('radarFrame', 'Live Radar')">📡 Live Radar · Click to Expand</div>
       <div class="intel-card-body">
         <iframe id="radarFrame" class="radar-frame"
-                src="https://embed.windy.com/embed.html?type=map&location=coordinates&metricRain=in&metricTemp=%C2%B0F&metricWind=mph&zoom=7&overlay=radar&product=radar&level=surface&lat=30.39&lon=-86.34&detailLat=30.39&detailLon=-86.34&marker=true"
-                loading="lazy" allow="autoplay"></iframe>
-      </div>
+                src="https://embed.windy.com/embed.html?type=map&location=coordinates&metricRain=in&metricTemp=%C2%B0F&metricWind=mph&zoom=7&overlay=radar&product=radar&level=surface&lat=30.38&lon=-86.34&detailLat=30.38&detailLon=-86.34&marker=true"
+                loading="lazy" allow="autoplay"></iframe></div>
     </div>
 
-    <!-- GOES Satellite -->
     <div class="intel-card">
-      <div class="intel-card-header" onclick="expandImage('satelliteImg', 'GOES-East Satellite — Gulf of Mexico')">
-        <span class="icon">▣</span> GOES Satellite · Click to Expand
-      </div>
-      <div class="intel-card-body">
-        <img id="satelliteImg" class="satellite-img"
-             src="https://cdn.star.nesdis.noaa.gov/GOES16/ABI/SECTOR/gm/GEOCOLOR/latest.jpg"
-             alt="GOES-East Gulf of Mexico satellite"
-             onerror="this.onerror=null;this.parentElement.innerHTML='<div class=img-error-placeholder>Satellite image unavailable — <a href=https://www.star.nesdis.noaa.gov/goes/sector.php?sat=G16&sector=gm target=_blank style=color:var(--accent)>View on NESDIS ↗</a></div>'"
-             loading="lazy">
-      </div>
-    </div>
-
-    <!-- Wind Speed Probabilities -->
-    <div class="intel-card">
-      <div class="intel-card-header" onclick="expandImage('windProbImg', 'Wind Speed Probabilities')">
-        <span class="icon">'¨</span> Wind Speed Probabilities · Click to Expand
-      </div>
-      <div class="intel-card-body">
-        <img id="windProbImg"
-             src="https://www.nhc.noaa.gov/storm_graphics/AT09/AL092026W5_sm2.gif"
-             alt="Wind speed probabilities"
-             onerror="this.onerror=null;this.parentElement.innerHTML='<div class=img-error-placeholder>Graphic unavailable — <a href=https://www.nhc.noaa.gov/refresh/graphics_at9+shtml/ target=_blank style=color:var(--accent)>View on NHC ↗</a></div>'"
-             loading="lazy"
-             style="width:100%;height:auto;">
-      </div>
-    </div>
-
-    <!-- Quick Links -->
-    <div class="intel-card">
-      <div class="intel-card-header">
-        <span class="icon">"—</span> Quick Links
-      </div>
+      <div class="intel-card-header">🔗 Quick Links</div>
       <div class="intel-card-body quick-links">
-        <a class="quick-link" href="https://www.nhc.noaa.gov/refresh/graphics_at9+shtml/" target="_blank">🌀 NHC Isaias</a>
-        <a class="quick-link" href="https://www.nhc.noaa.gov/text/MIATCPAT9.shtml" target="_blank">"„ Latest Advisory</a>
-        <a class="quick-link" href="https://www.nhc.noaa.gov/text/MIATCDAT9.shtml" target="_blank">"„ Discussion</a>
+        <a class="quick-link" href="https://www.nhc.noaa.gov/graphics_at4.shtml" target="_blank">🌀 NHC Isaias</a>
+        <a class="quick-link" href="https://www.nhc.noaa.gov/text/MIATCPAT4.shtml" target="_blank">📄 Latest Advisory</a>
+        <a class="quick-link" href="https://www.nhc.noaa.gov/text/MIATCDAT4.shtml" target="_blank">📄 Discussion</a>
         <a class="quick-link" href="https://www.nhc.noaa.gov/surge/inundation/" target="_blank">🌊 Surge Map</a>
-        <a class="quick-link" href="https://www.weather.gov/mob/" target="_blank">🏒 NWS Mobile</a>
-        <a class="quick-link" href="https://radar.weather.gov/station/KEVX/standard" target="_blank">"' KEVX Radar</a>
-        <a class="quick-link" href="https://www.fpl.com/storm/outage-map.html" target="_blank">⚑ FPL Outages</a>
+        <a class="quick-link" href="https://www.weather.gov/mob/" target="_blank">🏢 NWS Mobile</a>
+        <a class="quick-link" href="https://radar.weather.gov/station/KEVX/standard" target="_blank">📡 KEVX Radar</a>
+        <a class="quick-link" href="https://www.fpl.com/storm/outage-map.html" target="_blank">⚡ Power Outages</a>
         <a class="quick-link" href="https://www.co.walton.fl.us/154/Emergency-Management" target="_blank">🚨 Walton Co. EM</a>
-        <a class="quick-link" href="https://www.sandestin.com/sandestin-golf-and-beach-resort-webcams" target="_blank">"Ή Sandestin Cams</a>
-        <a class="quick-link" href="https://maps.google.com/?q=30.3899,-86.3395" target="_blank"> Google Maps</a>
+        <a class="quick-link" href="https://www.sandestin.com/sandestin-golf-and-beach-resort-webcams" target="_blank">📹 Sandestin Cams</a>
       </div>
     </div>
 
@@ -675,7 +654,7 @@ const CAMERAS = [
   { id: 'beach-club',      name: 'Beach Club',            sub: 'Sandestin Resort · Gulf Beach',   type: 'angelcam', code: '8dr53koeyx' },
   { id: 'miramar-pano',    name: 'Miramar Beach',         sub: 'Oceanfront Panorama',              type: 'youtube',  code: 'K1PkxWM6QB4' },
   { id: 'marina',          name: 'Baytowne Marina',       sub: 'Sandestin Resort',                 type: 'angelcam', code: '9kyznnm2y4' },
-  { id: 'maravilla',       name: 'Maravilla Overlook',    sub: 'Miramar Beach',                    type: 'youtube',  code: 'j2AYwnv0M7k' },
+  { id: 'marina-bar',      name: 'Marina Bar & Grill',    sub: 'Sandestin Resort',                 type: 'angelcam', code: '91yxbb1xro' },
   { id: 'leeward',         name: 'Leeward Key',           sub: 'Miramar Beach Shores',             type: 'youtube',  code: 'CVgBM39TOh8' },
   { id: 'village',         name: 'Baytowne Wharf',        sub: 'Sandestin Village',                type: 'angelcam', code: '91rx29pxlo' },
   { id: 'whales-tail',     name: 'Whales Tail Beach',     sub: 'Seascape, FL (~2 mi W)',           type: 'youtube',  code: 'TyX02EtQcYI' },
@@ -685,7 +664,7 @@ const CAMERAS = [
 
 const EXTRA_CAMERAS = [
   { id: 'tennis',          name: 'Tennis Center',         sub: 'Sandestin Resort',                 type: 'angelcam', code: 'j3r771e5rm' },
-  { id: 'marina-bar',      name: 'Marina Bar & Grill',    sub: 'Sandestin Resort',                 type: 'angelcam', code: '91yxbb1xro' },
+  { id: 'maravilla',       name: 'Maravilla Overlook',    sub: 'Miramar Beach (stream offline)',   type: 'youtube',  code: 'j2AYwnv0M7k' },
   { id: 'maryann',         name: 'Marina Bar — MaryAnn',  sub: 'Sandestin Mascot Cam',             type: 'angelcam', code: 'm1ervd6gr7' },
   { id: 'destin-marina',   name: 'Destin Harbor Marina',  sub: 'Destin (~4 mi W)',                 type: 'youtube',  code: '_9VkcK5vHgY' },
   { id: 'santa-rosa',      name: 'Santa Rosa Beach',      sub: '~5 mi E',                          type: 'youtube',  code: 'Tcw_v8NiQz8' },
@@ -802,8 +781,8 @@ async function fetchAlerts() {
   const indicator = document.getElementById('refreshIndicator');
   indicator.classList.add('loading');
   try {
-    const res = await fetch('https://api.weather.gov/alerts/active?point=30.3899,-86.3395', {
-      headers: { 'User-Agent': 'GulfStormWatch/1.0' }
+    const res = await fetch('https://api.weather.gov/alerts/active?point=30.38,-86.34', {
+      headers: { 'User-Agent': 'AlexiaAlert/1.0' }
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
@@ -812,11 +791,12 @@ async function fetchAlerts() {
     updateTicker(cachedAlerts);
   } catch (err) {
     console.error('Alert fetch error:', err);
-    document.getElementById('alertsLoading').textContent = 'Could not load alerts — check NWS directly';
+    const l = document.getElementById('alertsBody'); if (!cachedAlerts.length) l.innerHTML = '<div class="alerts-loading">Could not load alerts — retrying…</div>';
   } finally {
     indicator.classList.remove('loading');
     document.getElementById('lastUpdate').textContent =
       'Updated ' + new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    const st = document.getElementById('stamp-alerts'); if (st) st.textContent = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
   }
 }
 
@@ -844,30 +824,27 @@ function renderAlerts(features) {
 }
 
 function updateTicker(features) {
-  const ticker = document.getElementById('alertTicker');
+  window.CURRENT_ALERTS = features;
+  refreshTicker();
+}
+function refreshTicker() {
+  const features = window.CURRENT_ALERTS || [];
   const text = document.getElementById('alertTickerText');
-  if (!features.length) { ticker.classList.remove('active'); return; }
-  const headlines = features.map(f => `⚠ ${f.properties.headline || f.properties.event}`).join('     ·     ');
-  text.textContent = headlines;
-  ticker.classList.add('active');
+  const sep = '      ●      ';
+  const parts = [];
+  if (window.STORM_SUMMARY) parts.push('🌀 ' + window.STORM_SUMMARY);
+  if (features.length) features.forEach(f => parts.push('⚠ ' + (f.properties.headline || f.properties.event).toUpperCase()));
+  else parts.push('NO ACTIVE NWS ALERTS FOR THE SITE');
+  parts.push('LIVE · AUTO-UPDATING');
+  const msg = parts.join(sep);
+  if (text.dataset.msg !== msg) {
+    text.dataset.msg = msg;
+    text.textContent = msg;
+    text.style.animationDuration = Math.max(30, msg.length * 0.22) + 's';
+  }
 }
+window.refreshTicker = refreshTicker;
 
-// ─── Image Auto-Refresh (cache bust) ───
-function refreshImages() {
-  const ts = Date.now();
-  const stormImg = document.getElementById('stormTrackImg');
-  const satImg = document.getElementById('satelliteImg');
-  const windImg = document.getElementById('windProbImg');
-  if (stormImg && stormImg.tagName === 'IMG') {
-    stormImg.src = `https://www.nhc.noaa.gov/storm_graphics/AT09/AL092026_5day_cone_with_line_and_wind.png?t=${ts}`;
-  }
-  if (satImg && satImg.tagName === 'IMG') {
-    satImg.src = `https://cdn.star.nesdis.noaa.gov/GOES16/ABI/SECTOR/gm/GEOCOLOR/latest.jpg?t=${ts}`;
-  }
-  if (windImg && windImg.tagName === 'IMG') {
-    windImg.src = `https://www.nhc.noaa.gov/storm_graphics/AT09/AL092026W5_sm2.gif?t=${ts}`;
-  }
-}
 
 // ─── Clock ───
 function updateClock() {
@@ -901,12 +878,12 @@ function init() {
   buildCameraGrid();
   updateClock();
   setInterval(updateClock, 1000);
-  fetchAlerts();
-  setInterval(fetchAlerts, 120_000);      // Alerts every 2 min
-  setInterval(refreshImages, 300_000);    // Images every 5 min
+  refreshTicker();                         // alerts, storm data, charts, images: see storm.js (startLive)
 }
 
 document.addEventListener('DOMContentLoaded', init);
+window.fetchAlerts = fetchAlerts;
 </script>
+<script src="storm.js"></script>
 </body>
 </html>
