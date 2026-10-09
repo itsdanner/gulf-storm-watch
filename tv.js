@@ -8,13 +8,12 @@ const RADARS = [
 ];
 const $ = id => document.getElementById(id);
 
-// cameras (first nine), with automatic swap to a backup when a YouTube cam goes offline
+// cameras (first nine)
 CAMERAS.forEach(c => {
   const d = document.createElement('div');
   d.className = 'tile';
-  d.innerHTML = '<div class="cam-feed"></div><div class="label"></div>';
+  d.innerHTML = `<iframe src="${getCamSrc(c)}" allow="autoplay; encrypted-media" title="${c.name}"></iframe><div class="label">${c.name} · ${c.sub}</div>`;
   $('cams').appendChild(d);
-  CamManager.mount(d, c, (cam, backup) => { d.querySelector('.label').textContent = `${cam.name} · ${cam.sub}${backup ? ' · backup' : ''}`; });
 });
 
 // radar loops: preload the fresh GIF, then swap so there is no blank flash
@@ -87,7 +86,7 @@ keepAwake(); tickClock(); setInterval(tickClock, 1000);
 loadStorm(); setInterval(loadStorm, 120e3);
 loadAlerts(); setInterval(loadAlerts, 60e3);
 refreshRadars(); setInterval(refreshRadars, 180e3);
-setInterval(() => CamManager.reloadAngelcam(), 30 * 60e3);
+setInterval(() => document.querySelectorAll('.tile iframe').forEach(f => { f.src = f.src; }), 30 * 60e3);
 checkVersion(); setInterval(checkVersion, 5 * 60e3);
 
 // Google Cast receiver mode: when the TV itself loads this page as a Custom Web Receiver

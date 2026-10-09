@@ -166,7 +166,6 @@ google-cast-launcher { width: 32px; height: 32px; cursor: pointer; --connected-c
   transition: border-color .2s;
 }
 .cam-tile:hover { border-color: var(--accent); }
-.cam-feed { position: absolute; inset: 0; }
 .cam-tile iframe {
   position: absolute; inset: 0;
   width: 100%; height: 100%;
@@ -695,22 +694,24 @@ function createCamTile(cam) {
   const tile = document.createElement('div');
   tile.className = 'cam-tile';
   tile.id = `cam-${cam.id}`;
+
+  const src = cam.type === 'angelcam'
+    ? `https://v.angelcam.com/iframe?v=${cam.code}&autoplay=1`
+    : `https://www.youtube-nocookie.com/embed/${cam.code}?autoplay=1&mute=1&playsinline=1&controls=0&modestbranding=1&rel=0`;
+
   tile.innerHTML = `
     <span class="cam-live-dot"></span>
-    <button class="cam-expand-btn" title="Expand">⛢</button>
-    <div class="cam-feed"></div>
+    <button class="cam-expand-btn" onclick="event.stopPropagation(); expandCamera('${cam.id}', '${cam.name} — ${cam.sub}')" title="Expand">⛢</button>
+    <iframe src="${src}"
+            allow="autoplay; encrypted-media; picture-in-picture"
+            allowfullscreen loading="lazy"
+            title="${cam.name}"></iframe>
     <div class="cam-label">
-      <div class="cam-label-name"></div>
-      <div class="cam-label-sub"></div>
+      <div class="cam-label-name">${cam.name}</div>
+      <div class="cam-label-sub">${cam.sub}</div>
     </div>
   `;
-  const open = () => { const c = [...CAMERAS, ...EXTRA_CAMERAS].find(x => x.id === tile.dataset.cam); if (c) expandCamera(c.id, `${c.name} — ${c.sub}`); };
-  tile.querySelector('.cam-expand-btn').addEventListener('click', e => { e.stopPropagation(); open(); });
-  tile.addEventListener('click', open);
-  CamManager.mount(tile, cam, (c, backup) => {
-    tile.querySelector('.cam-label-name').textContent = c.name;
-    tile.querySelector('.cam-label-sub').textContent = backup ? `${c.sub} · backup cam (original offline)` : c.sub;
-  });
+  tile.addEventListener('click', () => expandCamera(cam.id, `${cam.name} — ${cam.sub}`));
   return tile;
 }
 
